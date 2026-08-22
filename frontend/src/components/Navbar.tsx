@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from './Toast';
 import { useAuthStore } from '../store/authStore';
 
@@ -17,16 +18,46 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleTheme,
   isDark,
 }) => {
+  const navigate = useNavigate();
   const { showToast } = useToast();
   const { user } = useAuthStore();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    showToast(`Searching for "${searchQuery}"...`, '⌕');
+    navigate('/city-search');
+  };
 
   return (
     <div className="topbar">
-      <div className="topbar-title">
+      <div className="topbar-title" style={{ flexShrink: 0 }}>
         <div className="crumb">{crumb}</div>
         <h1>{title}</h1>
       </div>
-      <div className="topbar-right">
+
+      {/* Prominent Centered Navbar Search Bar */}
+      <form onSubmit={handleSearchSubmit} style={{ flex: 1, maxWidth: '440px', margin: '0 24px' }}>
+        <div className="input-icon-wrap">
+          <span className="ico" style={{ fontSize: '15px' }}>⌕</span>
+          <input
+            className="input"
+            placeholder="Search trips, destinations, activities in India..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{
+              borderRadius: '99px',
+              padding: '8px 16px 8px 36px',
+              fontSize: '13px',
+              background: 'var(--paper-2)',
+              border: '1px solid var(--line)',
+            }}
+          />
+        </div>
+      </form>
+
+      <div className="topbar-right" style={{ flexShrink: 0 }}>
         <button
           className="icon-btn"
           onClick={onToggleTheme}
@@ -36,7 +67,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </button>
         <button
           className="btn btn-sundial btn-sm"
-          onClick={() => showToast('Create trip wizard ready for Phase 9', '＋')}
+          onClick={() => navigate('/create-trip')}
         >
           ＋ New trip
         </button>
@@ -57,6 +88,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div
           className="mini-avatar"
           style={{ cursor: 'pointer' }}
+          onClick={() => navigate('/profile')}
           title={user?.name || 'User Profile'}
         >
           {user?.avatar_url ? (

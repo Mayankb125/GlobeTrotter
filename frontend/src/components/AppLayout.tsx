@@ -32,6 +32,11 @@ export const AppLayout: React.FC = () => {
   const getBreadcrumb = () => {
     if (location.pathname.startsWith('/dashboard')) return { crumb: 'WORKSPACE', title: 'Dashboard' };
     if (location.pathname.startsWith('/trips')) return { crumb: 'WORKSPACE', title: 'My Trips' };
+    if (location.pathname.startsWith('/create-trip')) return { crumb: 'WORKSPACE', title: 'Create Trip' };
+    if (location.pathname.startsWith('/city-search')) return { crumb: 'WORKSPACE', title: 'City Search' };
+    if (location.pathname.startsWith('/builder')) return { crumb: 'ACTIVE TRIP', title: 'Itinerary Builder' };
+    if (location.pathname.startsWith('/activities')) return { crumb: 'ACTIVE TRIP', title: 'Activity Search' };
+    if (location.pathname.startsWith('/itinerary')) return { crumb: 'ACTIVE TRIP', title: 'Itinerary View' };
     if (location.pathname.startsWith('/profile')) return { crumb: 'ACCOUNT', title: 'Profile & Settings' };
     return { crumb: 'WORKSPACE', title: 'GlobeTrotter' };
   };
@@ -39,9 +44,9 @@ export const AppLayout: React.FC = () => {
   const { crumb, title } = getBreadcrumb();
 
   return (
-    <div className="app-shell" style={{ display: 'flex' }}>
+    <div className="app-shell" style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden' }}>
       <Sidebar />
-      <div className="main">
+      <div className="main" style={{ display: 'flex', flexDirection: 'column', height: '100vh', flex: 1, minWidth: 0 }}>
         <Navbar
           crumb={crumb}
           title={title}
@@ -49,7 +54,7 @@ export const AppLayout: React.FC = () => {
           onToggleTheme={toggleTheme}
           isDark={isDark}
         />
-        <div className="stage">
+        <div className="stage" style={{ padding: '20px 28px', flex: 1, overflowY: 'auto', maxWidth: '1300px' }}>
           <Outlet />
         </div>
       </div>
