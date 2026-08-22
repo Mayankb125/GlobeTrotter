@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { useToast } from './Toast';
+import { useToast } from '../components/Toast';
 
 export const Sidebar: React.FC = () => {
   const navigate = useNavigate();
@@ -15,7 +15,7 @@ export const Sidebar: React.FC = () => {
     navigate('/login');
   };
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => location.pathname.startsWith(path);
 
   return (
     <aside className="sidebar">
@@ -54,19 +54,19 @@ export const Sidebar: React.FC = () => {
         </button>
         <button
           className={`nav-item ${isActive('/trips') ? 'active' : ''}`}
-          onClick={() => showToast('My Trips ready for Phase 9', '✈')}
+          onClick={() => navigate('/trips')}
         >
-          <span className="ic">✈</span>My Trips<span className="badge">4</span>
+          <span className="ic">✈</span>My Trips
         </button>
         <button
           className={`nav-item ${isActive('/create-trip') ? 'active' : ''}`}
-          onClick={() => showToast('Create Trip ready for Phase 9', '＋')}
+          onClick={() => navigate('/create-trip')}
         >
           <span className="ic">＋</span>Create Trip
         </button>
         <button
           className={`nav-item ${isActive('/city-search') ? 'active' : ''}`}
-          onClick={() => showToast('City Search ready for Phase 9', '⌕')}
+          onClick={() => navigate('/city-search')}
         >
           <span className="ic">⌕</span>City Search
         </button>
@@ -75,20 +75,20 @@ export const Sidebar: React.FC = () => {
       <div className="nav-label">ACTIVE TRIP · RAJASTHAN</div>
       <nav className="route-nav">
         <button
-          className="nav-item"
-          onClick={() => showToast('Itinerary Builder ready for Phase 9', '≋')}
+          className={`nav-item ${isActive('/builder') ? 'active' : ''}`}
+          onClick={() => navigate('/builder/trip_1')}
         >
           <span className="ic">≋</span>Itinerary Builder
         </button>
         <button
-          className="nav-item"
-          onClick={() => showToast('Activity Search ready for Phase 9', '◎')}
+          className={`nav-item ${isActive('/activities') ? 'active' : ''}`}
+          onClick={() => navigate('/activities')}
         >
           <span className="ic">◎</span>Activity Search
         </button>
         <button
-          className="nav-item"
-          onClick={() => showToast('Itinerary View ready for Phase 9', '▤')}
+          className={`nav-item ${isActive('/itinerary') ? 'active' : ''}`}
+          onClick={() => navigate('/itinerary/trip_1')}
         >
           <span className="ic">▤</span>Itinerary View
         </button>
