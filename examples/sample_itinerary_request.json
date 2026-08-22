@@ -1,0 +1,32 @@
+{
+  "traveler": {
+    "traveler_id": "demo-traveler-001",
+    "name": "Alice Johnson",
+    "email": "alice.johnson@example.com",
+    "home_location": "Mumbai",
+    "preferences": {
+      "budget_min": 50000,
+      "budget_max": 150000,
+      "travel_style": "balanced",
+      "interests": ["culture", "food", "architecture", "history"],
+      "accessibility_needs": [],
+      "dietary_restrictions": ["vegetarian"]
+    },
+    "loyalty_programs": {
+      "SkyAirlines": "SKY123456",
+      "HotelBooking": "HB789012"
+    }
+  },
+  "request": {
+    "destination": "Goa",
+    "start_date": "2025-12-15T00:00:00",
+    "end_date": "2025-12-20T00:00:00",
+    "purpose": "vacation",
+    "travelers_count": 1,
+    "preferences": {
+      "accommodation_type": "hotel",
+      "flight_class": "economy",
+      "include_activities": true
+    }
+  }
+}
