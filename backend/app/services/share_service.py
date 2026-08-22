@@ -86,6 +86,7 @@ async def revoke_share_token(
 
     db.add(trip)
     await db.flush()
+    await db.refresh(trip)
 
     return trip
 
