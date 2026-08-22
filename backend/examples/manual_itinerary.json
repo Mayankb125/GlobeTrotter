@@ -1,0 +1,187 @@
+{
+  "destination": "Goa",
+  "duration_days": 5,
+  "accommodation": {
+    "name": "Heritage Haveli",
+    "cost_per_night": 4000,
+    "total_nights": 4,
+    "total_cost": 16000,
+    "recommendation": "Central location with traditional architecture, affordable for balanced travelers."
+  },
+  "daily_schedule": [
+    {
+      "day": 1,
+      "date": "December 15, 2025",
+      "activities": [
+        {
+          "time": "9:00 AM - 11:00 AM",
+          "name": "Fort Aguada Visit",
+          "description": "Explore the historic fort and enjoy sea views",
+          "location": "Fort Aguada, North Goa",
+          "cost": 500,
+          "transportation": "Auto-rickshaw"
+        },
+        {
+          "time": "2:00 PM - 4:00 PM",
+          "name": "Local Market Browsing",
+          "description": "Stroll through bustling local bazaars",
+          "location": "Maple Market, Panaji",
+          "cost": 0,
+          "transportation": "Auto-rickshaw"
+        }
+      ],
+      "meals": [
+        {
+          "time": "lunch",
+          "restaurant": "Fisherman's Wharf",
+          "cuisine": "Goan Seafood",
+          "estimated_cost": 800
+        }
+      ],
+      "total_day_cost": 1500
+    },
+    {
+      "day": 2,
+      "date": "December 16, 2025",
+      "activities": [
+        {
+          "time": "9:00 AM - 11:00 AM",
+          "name": "Basilica of Bom Jesus",
+          "description": "Visit the historic church and its heritage",
+          "location": "Old Goa",
+          "cost": 200,
+          "transportation": "Auto-rickshaw"
+        },
+        {
+          "time": "1:00 PM - 3:00 PM",
+          "name": "Museum Visit",
+          "description": "Explore local art and history",
+          "location": "Museum of Goa, Panaji",
+          "cost": 300,
+          "transportation": "Auto-rickshaw"
+        }
+      ],
+      "meals": [
+        {
+          "time": "lunch",
+          "restaurant": "Vinayak Family Restaurant",
+          "cuisine": "Goan Cuisine",
+          "estimated_cost": 800
+        }
+      ],
+      "total_day_cost": 1500
+    },
+    {
+      "day": 3,
+      "date": "December 17, 2025",
+      "activities": [
+        {
+          "time": "9:00 AM - 11:00 AM",
+          "name": "Dudhsagar Falls Adventure",
+          "description": "Full day adventure to the iconic waterfall",
+          "location": "Dudhsagar Falls",
+          "cost": 2000,
+          "transportation": "Auto-rickshaw"
+        },
+        {
+          "time": "2:00 PM - 4:00 PM",
+          "name": "Sunset Point",
+          "description": "Enjoy panoramic sunset views",
+          "location": "Baga Beach Sunset Point",
+          "cost": 0,
+          "transportation": "Auto-rickshaw"
+        }
+      ],
+      "meals": [
+        {
+          "time": "lunch",
+          "restaurant": "Café Mambo",
+          "cuisine": "International",
+          "estimated_cost": 800
+        }
+      ],
+      "total_day_cost": 3000
+    },
+    {
+      "day": 4,
+      "date": "December 18, 2025",
+      "activities": [
+        {
+          "time": "9:00 AM - 11:00 AM",
+          "name": "Calangute Beach",
+          "description": "Relax on the popular sandy beach",
+          "location": "Calangute Beach",
+          "cost": 50,
+          "transportation": "Auto-rickshaw"
+        },
+        {
+          "time": "1:00 PM - 3:00 PM",
+          "name": "Local Craft Village",
+          "description": "Explore traditional Goan crafts",
+          "location": "Karmali Village",
+          "cost": 0,
+          "transportation": "Auto-rickshaw"
+        }
+      ],
+      "meals": [
+        {
+          "time": "lunch",
+          "restaurant": "Bodega Bar & Restaurant",
+          "cuisine": "Seafood",
+          "estimated_cost": 800
+        }
+      ],
+      "total_day_cost": 1050
+    },
+    {
+      "day": 5,
+      "date": "December 19, 2025",
+      "activities": [
+        {
+          "time": "9:00 AM - 11:00 AM",
+          "name": "Old Goa Fort",
+          "description": "Tour the historic fort and surrounding area",
+          "location": "Old Goa Fort",
+          "cost": 500,
+          "transportation": "Auto-rickshaw"
+        },
+        {
+          "time": "1:00 PM - 3:00 PM",
+          "name": "Spice Plantation",
+          "description": "Discover Goan spices and flavors",
+          "location": "Spice Village, Saligao",
+          "cost": 200,
+          "transportation": "Auto-rickshaw"
+        }
+      ],
+      "meals": [
+        {
+          "time": "lunch",
+          "restaurant": "The Fisherman's Wharf",
+          "cuisine": "Seafood",
+          "estimated_cost": 800
+        }
+      ],
+      "total_day_cost": 1700
+    }
+  ],
+  "transportation": {
+    "to_destination": {
+      "method": "Train",
+      "cost": 2500,
+      "duration": "14 hours"
+    },
+    "local": "Auto-rickshaw, taxi apps",
+    "estimated_local_cost": 2000
+  },
+  "cost_breakdown": {
+    "accommodation": 16000,
+    "activities": 3850,
+    "food": 4000,
+    "transportation": 3500,
+    "miscellaneous": 2000,
+    "total": 28250,
+    "currency": "INR"
+  },
+  "special_notes": "Keep valuables secure and avoid isolated areas after dark. Wear modest clothing when visiting temples."
+}
