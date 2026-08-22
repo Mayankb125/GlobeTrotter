@@ -11,13 +11,16 @@ export interface UpdateProfileDTO {
 export const usersApi = {
   updateProfile: async (dto: UpdateProfileDTO): Promise<User> => {
     try {
-      const response = await apiClient.put<User>('/auth/me', dto);
-      const savedUser = localStorage.getItem('globetrotter_user');
-      if (savedUser) {
-        const user = { ...JSON.parse(savedUser), ...response.data };
-        localStorage.setItem('globetrotter_user', JSON.stringify(user));
-      }
-      return response.data;
+      const response = await apiClient.put<any>('/auth/me', dto);
+      const user: User = {
+        id: response.data.id,
+        name: response.data.name,
+        email: response.data.email,
+        avatar_url: response.data.profile_photo_url || response.data.avatar_url,
+        created_at: response.data.created_at,
+      };
+      localStorage.setItem('globetrotter_user', JSON.stringify(user));
+      return user;
     } catch (error) {
       // Local fallback for offline mode
       const savedUser = localStorage.getItem('globetrotter_user');
@@ -27,7 +30,7 @@ export const usersApi = {
           ...user,
           name: dto.name !== undefined ? dto.name : user.name,
           email: dto.email !== undefined ? dto.email : user.email,
-          profile_photo_url: dto.profile_photo_url !== undefined ? dto.profile_photo_url : user.profile_photo_url,
+          avatar_url: dto.profile_photo_url !== undefined ? dto.profile_photo_url : user.avatar_url,
         };
         localStorage.setItem('globetrotter_user', JSON.stringify(updated));
         return updated;

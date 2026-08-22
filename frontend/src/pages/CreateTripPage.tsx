@@ -14,12 +14,12 @@ export const CreateTripPage: React.FC = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
 
-  const [name, setName] = useState('Royal Rajasthan Expedition');
-  const [destination, setDestination] = useState('Jaipur, Udaipur, Jodhpur');
-  const [startDate, setStartDate] = useState('2026-11-04');
-  const [endDate, setEndDate] = useState('2026-11-12');
-  const [description, setDescription] = useState('Experiencing palace stays, lake cruises, and traditional Rajasthani thali dining.');
-  const [budgetCap, setBudgetCap] = useState('185000');
+  const [name, setName] = useState('');
+  const [destination, setDestination] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [description, setDescription] = useState('');
+  const [budgetCap, setBudgetCap] = useState('');
   const [coverImage, setCoverImage] = useState(PRESET_COVERS[0].url);
   const [loading, setLoading] = useState(false);
 
