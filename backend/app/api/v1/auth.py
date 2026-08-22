@@ -1,5 +1,5 @@
 """
-Auth routes: signup, login, forgot-password.
+Auth routes: signup, login, forgot-password, and /me (protected test endpoint).
 """
 import logging
 import secrets
@@ -11,7 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models.user import User
-from app.schemas.user import TokenResponse, UserCreate, UserLogin
+from app.schemas.user import TokenResponse, UserCreate, UserLogin, UserOut
+from app.api.v1.deps import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -115,3 +116,20 @@ async def forgot_password(email: str, db: AsyncSession = Depends(get_db)):
 
     # Always return the same response to prevent user enumeration
     return {"detail": "If that email is registered, a reset link has been sent."}
+
+
+# ---------------------------------------------------------------------------
+# 3.7 — GET /auth/me  (protected test endpoint)
+# ---------------------------------------------------------------------------
+
+@router.get(
+    "/me",
+    response_model=UserOut,
+    summary="Return the currently authenticated user",
+)
+async def me(current_user: User = Depends(get_current_user)):
+    """
+    Returns the profile of the user identified by the Bearer token.
+    Returns 401 if the token is missing or invalid.
+    """
+    return current_user
