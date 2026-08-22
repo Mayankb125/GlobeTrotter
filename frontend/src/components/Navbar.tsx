@@ -4,16 +4,12 @@ import { useToast } from './Toast';
 import { useAuthStore } from '../store/authStore';
 
 interface NavbarProps {
-  crumb: string;
-  title: string;
   onOpenSupport: () => void;
   onToggleTheme: () => void;
   isDark: boolean;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
-  crumb,
-  title,
   onOpenSupport,
   onToggleTheme,
   isDark,
@@ -31,14 +27,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <div className="topbar">
-      <div className="topbar-title" style={{ flexShrink: 0 }}>
-        <div className="crumb">{crumb}</div>
-        <h1>{title}</h1>
-      </div>
-
-      {/* Prominent Centered Navbar Search Bar */}
-      <form onSubmit={handleSearchSubmit} style={{ flex: 1, maxWidth: '440px', margin: '0 24px' }}>
+    <div className="topbar" style={{ justifyContent: 'space-between' }}>
+      {/* Prominent Left-Aligned Navbar Search Bar */}
+      <form onSubmit={handleSearchSubmit} style={{ flex: 1, maxWidth: '480px' }}>
         <div className="input-icon-wrap">
           <span className="ico" style={{ fontSize: '15px' }}>⌕</span>
           <input
@@ -52,11 +43,13 @@ export const Navbar: React.FC<NavbarProps> = ({
               fontSize: '13px',
               background: 'var(--paper-2)',
               border: '1px solid var(--line)',
+              width: '100%',
             }}
           />
         </div>
       </form>
 
+      {/* Right Navbar Controls */}
       <div className="topbar-right" style={{ flexShrink: 0 }}>
         <button
           className="icon-btn"
