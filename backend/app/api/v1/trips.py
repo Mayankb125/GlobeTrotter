@@ -3,6 +3,7 @@ Trip CRUD routes — create, list, detail, delete.
 Stop management — add, update, reorder.
 City + activity search.
 StopActivity management — add, remove.
+AI-assist — populate an empty trip with an LLM-generated itinerary.
 """
 import uuid
 from typing import List, Optional
@@ -13,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.api.v1.deps import get_current_user
+from app.core.config import get_settings
 from app.core.database import get_db
 from app.models.activity import Activity
 from app.models.city import City
@@ -21,8 +23,11 @@ from app.models.stop_activity import StopActivity
 from app.models.trip import Trip
 from app.models.user import User
 from app.schemas.activity import ActivityOut, StopActivityCreate, StopActivityOut
+from app.schemas.ai_assist import AIAssistRequest, AIAssistResponse, AIAssistUnavailable
 from app.schemas.stop import StopCreate, StopDetail, StopOut, StopReorderItem, StopUpdate
-from app.schemas.trip import TripCreate, TripDetail, TripOut
+from app.schemas.trip import TripCreate, TripDetail, TripOut, ShareTokenOut, TripCopyOut
+from app.services.ai_assist_service import AIServiceError, run_ai_assist
+from app.services.share_service import generate_share_token, revoke_share_token, get_trip_by_share_token, copy_trip
 
 router = APIRouter(tags=["trips"])
 
@@ -146,6 +151,132 @@ async def delete_trip(
     """Permanently delete a trip (and all stops/activities via cascade)."""
     trip = await _get_trip_owned(trip_id, current_user, db)
     await db.delete(trip)
+
+
+# ---------------------------------------------------------------------------
+# 6.2 — POST /trips/{id}/share
+# ---------------------------------------------------------------------------
+
+@router.post("/trips/{trip_id}/share", response_model=ShareTokenOut)
+async def share_trip(
+    trip_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Generate (or rotate) a share token for a trip.
+
+    Sets is_public=True and returns the token plus a ready-to-copy share URL.
+    Requires the authenticated user to own the trip.
+    """
+    try:
+        trip = await generate_share_token(trip_id, current_user.id, db)
+    except ValueError as exc:
+        # Service raises ValueError for not-found or wrong-owner cases
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        )
+
+    settings = get_settings()
+    share_url = f"{settings.FRONTEND_URL}/trips/shared/{trip.share_token}"
+
+    return ShareTokenOut(
+        trip_id=trip.id,
+        share_token=trip.share_token,
+        is_public=trip.is_public,
+        share_url=share_url,
+    )
+
+
+# ---------------------------------------------------------------------------
+# 6.3 — POST /trips/{id}/unshare
+# ---------------------------------------------------------------------------
+
+@router.post("/trips/{trip_id}/unshare", response_model=TripOut)
+async def unshare_trip(
+    trip_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Revoke the share token for a trip, making it private again.
+
+    Clears share_token and sets is_public=False.
+    Requires the authenticated user to own the trip.
+    """
+    try:
+        trip = await revoke_share_token(trip_id, current_user.id, db)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    return trip
+
+
+# ---------------------------------------------------------------------------
+# 6.4 — GET /public/{share_token}  (no auth)
+# ---------------------------------------------------------------------------
+
+@router.get("/public/{share_token}", response_model=TripDetail)
+async def get_public_trip(
+    share_token: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Public, unauthenticated read of a shared trip.
+
+    Returns the full nested trip (stops → city + activities).
+    Responds 404 if the token is invalid or the trip is no longer public.
+    """
+    # Load the trip with full nesting in one query
+    result = await db.execute(
+        select(Trip)
+        .options(
+            selectinload(Trip.stops).selectinload(Stop.city),
+            selectinload(Trip.stops)
+            .selectinload(Stop.stop_activities)
+            .selectinload(StopActivity.activity),
+        )
+        .where(Trip.share_token == share_token, Trip.is_public.is_(True))
+    )
+    trip = result.scalars().first()
+
+    if not trip:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Share link is invalid or has been revoked.",
+        )
+
+    trip_data = TripDetail.model_validate(trip)
+    trip_data.stops = [StopDetail.from_orm_with_city(s) for s in trip.stops]
+    return trip_data
+
+
+# ---------------------------------------------------------------------------
+# 6.5 — POST /public/{share_token}/copy  (auth required)
+# ---------------------------------------------------------------------------
+
+@router.post(
+    "/public/{share_token}/copy",
+    response_model=TripCopyOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def copy_shared_trip(
+    share_token: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Deep-clone a public shared trip into the authenticated user's account.
+
+    Copies: Trip → Stops (preserving order) → StopActivities (preserving
+    order, dates, cost_override, notes).  The cloned trip starts private.
+    Returns the new trip. Responds 404 if the token is invalid or revoked.
+    """
+    try:
+        new_trip = await copy_trip(share_token, current_user.id, db)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    return new_trip
 
 
 # ---------------------------------------------------------------------------
@@ -328,3 +459,56 @@ async def remove_activity_from_stop(
     if not sa:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="StopActivity not found.")
     await db.delete(sa)
+
+
+# ---------------------------------------------------------------------------
+# 7.3 — POST /trips/{id}/ai-assist
+# ---------------------------------------------------------------------------
+
+@router.post(
+    "/trips/{trip_id}/ai-assist",
+    response_model=AIAssistResponse,
+    status_code=status.HTTP_200_OK,
+    responses={
+        503: {
+            "description": "AI service unavailable",
+            "model": AIAssistUnavailable,
+        }
+    },
+)
+async def ai_assist_trip(
+    trip_id: uuid.UUID,
+    payload: AIAssistRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Populate an existing trip with an AI-generated itinerary.
+
+    Calls the LLM planner (Groq + Gemini) and persists the draft as real
+    Stop / Activity / StopActivity / BudgetItem rows, making the result
+    immediately editable via the normal CRUD endpoints.
+
+    Graceful degradation (7.4)
+    ──────────────────────────
+    • Missing API keys  → planner uses its internal stub response; the
+      endpoint still succeeds but `ai_degraded=true` in the response.
+    • LLM API error     → same as above (planner catches and falls back).
+    • Completely broken planner (no daily_schedule at all) → 503 with a
+      clean AIAssistUnavailable detail body instead of a 500 stack-trace.
+    """
+    # Ownership check
+    trip = await _get_trip_owned(trip_id, current_user, db)
+
+    try:
+        result = await run_ai_assist(trip=trip, request=payload, db=db)
+    except AIServiceError as exc:
+        # 7.4 — clean 503 instead of crashing
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=AIAssistUnavailable(
+                message=str(exc),
+            ).model_dump(),
+        )
+
+    return result
