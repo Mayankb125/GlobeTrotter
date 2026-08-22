@@ -4,7 +4,6 @@ Shared pytest fixtures for the GlobeTrotter test suite.
 Uses an in-memory SQLite database (aiosqlite) so tests run without Postgres.
 The FastAPI test client is built with httpx.AsyncClient + ASGITransport.
 """
-import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
@@ -16,50 +15,12 @@ TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
 
 
 @pytest_asyncio.fixture
-async def client():
-    """
-    Yield an httpx AsyncClient wired to the FastAPI app.
-    Creates its own in-memory SQLite DB and overrides get_db for the duration
-    of each test, then cleans up.
-    """
-    engine = create_async_engine(TEST_DB_URL, echo=False, future=True)
-    SessionLocal = async_sessionmaker(
-        bind=engine, class_=AsyncSession, expire_on_commit=False
-    )
-
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-    async with SessionLocal() as session:
-        async def override_get_db():
-            yield session
-
-        app.dependency_overrides[get_db] = override_get_db
-
-        async with AsyncClient(
-            transport=ASGITransport(app=app),
-            base_url="http://testserver",
-        ) as ac:
-            yield ac
-
-        app.dependency_overrides.clear()
-        await session.rollback()
-
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-
-    await engine.dispose()
-
-
-# Keep the standalone db_session fixture for model-level tests
-@pytest_asyncio.fixture
 async def db_session():
     """Yield a fresh async SQLite session with all tables created."""
     engine = create_async_engine(TEST_DB_URL, echo=False, future=True)
     SessionLocal = async_sessionmaker(
         bind=engine, class_=AsyncSession, expire_on_commit=False
     )
-
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
@@ -69,5 +30,24 @@ async def db_session():
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
-
     await engine.dispose()
+
+
+@pytest_asyncio.fixture
+async def client(db_session: AsyncSession):
+    """
+    Yield an httpx AsyncClient wired to the FastAPI app with the test DB session.
+    The db_session fixture is shared so tests can seed data directly AND hit endpoints.
+    """
+    async def override_get_db():
+        yield db_session
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://testserver",
+    ) as ac:
+        yield ac
+
+    app.dependency_overrides.clear()
