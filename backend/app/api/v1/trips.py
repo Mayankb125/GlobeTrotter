@@ -3,6 +3,7 @@ Trip CRUD routes — create, list, detail, delete.
 Stop management — add, update, reorder.
 City + activity search.
 StopActivity management — add, remove.
+AI-assist — populate an empty trip with an LLM-generated itinerary.
 """
 import uuid
 from typing import List, Optional
@@ -22,8 +23,10 @@ from app.models.stop_activity import StopActivity
 from app.models.trip import Trip
 from app.models.user import User
 from app.schemas.activity import ActivityOut, StopActivityCreate, StopActivityOut
+from app.schemas.ai_assist import AIAssistRequest, AIAssistResponse, AIAssistUnavailable
 from app.schemas.stop import StopCreate, StopDetail, StopOut, StopReorderItem, StopUpdate
 from app.schemas.trip import TripCreate, TripDetail, TripOut, ShareTokenOut, TripCopyOut
+from app.services.ai_assist_service import AIServiceError, run_ai_assist
 from app.services.share_service import generate_share_token, revoke_share_token, get_trip_by_share_token, copy_trip
 
 router = APIRouter(tags=["trips"])
@@ -456,3 +459,56 @@ async def remove_activity_from_stop(
     if not sa:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="StopActivity not found.")
     await db.delete(sa)
+
+
+# ---------------------------------------------------------------------------
+# 7.3 — POST /trips/{id}/ai-assist
+# ---------------------------------------------------------------------------
+
+@router.post(
+    "/trips/{trip_id}/ai-assist",
+    response_model=AIAssistResponse,
+    status_code=status.HTTP_200_OK,
+    responses={
+        503: {
+            "description": "AI service unavailable",
+            "model": AIAssistUnavailable,
+        }
+    },
+)
+async def ai_assist_trip(
+    trip_id: uuid.UUID,
+    payload: AIAssistRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Populate an existing trip with an AI-generated itinerary.
+
+    Calls the LLM planner (Groq + Gemini) and persists the draft as real
+    Stop / Activity / StopActivity / BudgetItem rows, making the result
+    immediately editable via the normal CRUD endpoints.
+
+    Graceful degradation (7.4)
+    ──────────────────────────
+    • Missing API keys  → planner uses its internal stub response; the
+      endpoint still succeeds but `ai_degraded=true` in the response.
+    • LLM API error     → same as above (planner catches and falls back).
+    • Completely broken planner (no daily_schedule at all) → 503 with a
+      clean AIAssistUnavailable detail body instead of a 500 stack-trace.
+    """
+    # Ownership check
+    trip = await _get_trip_owned(trip_id, current_user, db)
+
+    try:
+        result = await run_ai_assist(trip=trip, request=payload, db=db)
+    except AIServiceError as exc:
+        # 7.4 — clean 503 instead of crashing
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=AIAssistUnavailable(
+                message=str(exc),
+            ).model_dump(),
+        )
+
+    return result
