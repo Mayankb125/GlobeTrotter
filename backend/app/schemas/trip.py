@@ -65,6 +65,21 @@ class ShareTokenOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class TripCopyOut(BaseModel):
+    """Response body for POST /public/{share_token}/copy."""
+    id: uuid.UUID
+    name: str
+    description: Optional[str] = None
+    start_date: date
+    end_date: date
+    cover_photo_url: Optional[str] = None
+    budget_cap: Optional[Decimal] = None
+    is_public: bool
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 # Avoid circular import — resolved at bottom of schemas package
 from app.schemas.stop import StopDetail  # noqa: E402
 TripDetail.model_rebuild()

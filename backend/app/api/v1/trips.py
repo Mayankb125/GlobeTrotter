@@ -23,8 +23,8 @@ from app.models.trip import Trip
 from app.models.user import User
 from app.schemas.activity import ActivityOut, StopActivityCreate, StopActivityOut
 from app.schemas.stop import StopCreate, StopDetail, StopOut, StopReorderItem, StopUpdate
-from app.schemas.trip import TripCreate, TripDetail, TripOut, ShareTokenOut
-from app.services.share_service import generate_share_token
+from app.schemas.trip import TripCreate, TripDetail, TripOut, ShareTokenOut, TripCopyOut
+from app.services.share_service import generate_share_token, revoke_share_token, get_trip_by_share_token, copy_trip
 
 router = APIRouter(tags=["trips"])
 
@@ -184,6 +184,96 @@ async def share_trip(
         is_public=trip.is_public,
         share_url=share_url,
     )
+
+
+# ---------------------------------------------------------------------------
+# 6.3 — POST /trips/{id}/unshare
+# ---------------------------------------------------------------------------
+
+@router.post("/trips/{trip_id}/unshare", response_model=TripOut)
+async def unshare_trip(
+    trip_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Revoke the share token for a trip, making it private again.
+
+    Clears share_token and sets is_public=False.
+    Requires the authenticated user to own the trip.
+    """
+    try:
+        trip = await revoke_share_token(trip_id, current_user.id, db)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    return trip
+
+
+# ---------------------------------------------------------------------------
+# 6.4 — GET /public/{share_token}  (no auth)
+# ---------------------------------------------------------------------------
+
+@router.get("/public/{share_token}", response_model=TripDetail)
+async def get_public_trip(
+    share_token: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Public, unauthenticated read of a shared trip.
+
+    Returns the full nested trip (stops → city + activities).
+    Responds 404 if the token is invalid or the trip is no longer public.
+    """
+    # Load the trip with full nesting in one query
+    result = await db.execute(
+        select(Trip)
+        .options(
+            selectinload(Trip.stops).selectinload(Stop.city),
+            selectinload(Trip.stops)
+            .selectinload(Stop.stop_activities)
+            .selectinload(StopActivity.activity),
+        )
+        .where(Trip.share_token == share_token, Trip.is_public.is_(True))
+    )
+    trip = result.scalars().first()
+
+    if not trip:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Share link is invalid or has been revoked.",
+        )
+
+    trip_data = TripDetail.model_validate(trip)
+    trip_data.stops = [StopDetail.from_orm_with_city(s) for s in trip.stops]
+    return trip_data
+
+
+# ---------------------------------------------------------------------------
+# 6.5 — POST /public/{share_token}/copy  (auth required)
+# ---------------------------------------------------------------------------
+
+@router.post(
+    "/public/{share_token}/copy",
+    response_model=TripCopyOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def copy_shared_trip(
+    share_token: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Deep-clone a public shared trip into the authenticated user's account.
+
+    Copies: Trip → Stops (preserving order) → StopActivities (preserving
+    order, dates, cost_override, notes).  The cloned trip starts private.
+    Returns the new trip. Responds 404 if the token is invalid or revoked.
+    """
+    try:
+        new_trip = await copy_trip(share_token, current_user.id, db)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    return new_trip
 
 
 # ---------------------------------------------------------------------------
