@@ -24,6 +24,7 @@ import { ItineraryViewPage } from './pages/ItineraryViewPage';
 import { BudgetBreakdownPage } from './pages/BudgetBreakdownPage';
 import { CalendarTimelinePage } from './pages/CalendarTimelinePage';
 import { SharedItineraryPage } from './pages/SharedItineraryPage';
+import { ProfileSettingsPage } from './pages/ProfileSettingsPage';
 
 export const App: React.FC = () => {
   const { initialize } = useAuthStore();
@@ -56,6 +57,7 @@ export const App: React.FC = () => {
               <Route path="/itinerary/:id" element={<ItineraryViewPage />} />
               <Route path="/budget/:id" element={<BudgetBreakdownPage />} />
               <Route path="/calendar/:id" element={<CalendarTimelinePage />} />
+              <Route path="/settings" element={<ProfileSettingsPage />} />
             </Route>
           </Route>
 

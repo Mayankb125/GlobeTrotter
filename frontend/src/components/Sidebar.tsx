@@ -109,8 +109,8 @@ export const Sidebar: React.FC = () => {
       <div className="nav-label">ACCOUNT</div>
       <nav className="route-nav">
         <button
-          className={`nav-item ${isActive('/profile') ? 'active' : ''}`}
-          onClick={() => showToast('Profile Settings ready for Phase 11', '⚙')}
+          className={`nav-item ${isActive('/settings') ? 'active' : ''}`}
+          onClick={() => navigate('/settings')}
         >
           <span className="ic">⚙</span>Profile & Settings
         </button>
