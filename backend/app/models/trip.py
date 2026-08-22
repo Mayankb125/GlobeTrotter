@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime
 from typing import List, Optional
-from sqlalchemy import String, ForeignKey, Text, Date, Boolean, DateTime, func
+from sqlalchemy import String, ForeignKey, Text, Date, Boolean, DateTime, Numeric, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base, GUID
@@ -19,6 +19,7 @@ class Trip(Base):
     cover_photo_url: Mapped[str] = mapped_column(String(255), nullable=True)
     is_public: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     share_token: Mapped[Optional[str]] = mapped_column(String(100), unique=True, nullable=True)
+    budget_cap: Mapped[Optional[float]] = mapped_column(Numeric(12, 2), nullable=True)
     
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
