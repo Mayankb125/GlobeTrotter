@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.api.v1.deps import get_current_user
+from app.core.config import get_settings
 from app.core.database import get_db
 from app.models.activity import Activity
 from app.models.city import City
@@ -22,7 +23,8 @@ from app.models.trip import Trip
 from app.models.user import User
 from app.schemas.activity import ActivityOut, StopActivityCreate, StopActivityOut
 from app.schemas.stop import StopCreate, StopDetail, StopOut, StopReorderItem, StopUpdate
-from app.schemas.trip import TripCreate, TripDetail, TripOut
+from app.schemas.trip import TripCreate, TripDetail, TripOut, ShareTokenOut
+from app.services.share_service import generate_share_token
 
 router = APIRouter(tags=["trips"])
 
@@ -146,6 +148,42 @@ async def delete_trip(
     """Permanently delete a trip (and all stops/activities via cascade)."""
     trip = await _get_trip_owned(trip_id, current_user, db)
     await db.delete(trip)
+
+
+# ---------------------------------------------------------------------------
+# 6.2 — POST /trips/{id}/share
+# ---------------------------------------------------------------------------
+
+@router.post("/trips/{trip_id}/share", response_model=ShareTokenOut)
+async def share_trip(
+    trip_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Generate (or rotate) a share token for a trip.
+
+    Sets is_public=True and returns the token plus a ready-to-copy share URL.
+    Requires the authenticated user to own the trip.
+    """
+    try:
+        trip = await generate_share_token(trip_id, current_user.id, db)
+    except ValueError as exc:
+        # Service raises ValueError for not-found or wrong-owner cases
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        )
+
+    settings = get_settings()
+    share_url = f"{settings.FRONTEND_URL}/trips/shared/{trip.share_token}"
+
+    return ShareTokenOut(
+        trip_id=trip.id,
+        share_token=trip.share_token,
+        is_public=trip.is_public,
+        share_url=share_url,
+    )
 
 
 # ---------------------------------------------------------------------------

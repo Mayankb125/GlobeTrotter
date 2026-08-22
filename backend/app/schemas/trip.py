@@ -55,6 +55,16 @@ class TripDetail(TripOut):
     stops: List["StopDetail"] = []
 
 
+class ShareTokenOut(BaseModel):
+    """Response body for POST /trips/{id}/share."""
+    trip_id: uuid.UUID
+    share_token: str
+    is_public: bool
+    share_url: str  # fully-qualified frontend link, ready to copy
+
+    model_config = {"from_attributes": True}
+
+
 # Avoid circular import — resolved at bottom of schemas package
 from app.schemas.stop import StopDetail  # noqa: E402
 TripDetail.model_rebuild()
