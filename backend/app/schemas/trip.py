@@ -3,6 +3,7 @@ Pydantic schemas for Trip — Create, Update, and Out variants.
 """
 import uuid
 from datetime import date, datetime
+from decimal import Decimal
 from typing import Optional, List
 
 from pydantic import BaseModel, Field, model_validator
@@ -14,6 +15,7 @@ class TripCreate(BaseModel):
     start_date: date
     end_date: date
     cover_photo_url: Optional[str] = None
+    budget_cap: Optional[Decimal] = Field(None, ge=0)
 
     @model_validator(mode="after")
     def end_after_start(self) -> "TripCreate":
@@ -28,6 +30,7 @@ class TripUpdate(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     cover_photo_url: Optional[str] = None
+    budget_cap: Optional[Decimal] = Field(None, ge=0)
 
 
 class TripOut(BaseModel):
@@ -40,6 +43,7 @@ class TripOut(BaseModel):
     cover_photo_url: Optional[str] = None
     is_public: bool
     share_token: Optional[str] = None
+    budget_cap: Optional[Decimal] = None
     created_at: datetime
     updated_at: datetime
 
