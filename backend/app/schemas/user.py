@@ -38,3 +38,12 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserOut
+
+
+class UserUpdate(BaseModel):
+    """Payload for updating user profile info."""
+    name: Optional[str] = Field(None, min_length=1, max_length=100)
+    email: Optional[EmailStr] = None
+    profile_photo_url: Optional[str] = None
+    password: Optional[str] = Field(None, min_length=8, max_length=128)
+
