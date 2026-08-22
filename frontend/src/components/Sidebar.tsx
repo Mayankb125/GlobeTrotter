@@ -93,14 +93,14 @@ export const Sidebar: React.FC = () => {
           <span className="ic">▤</span>Itinerary View
         </button>
         <button
-          className="nav-item"
-          onClick={() => showToast('Budget Breakdown ready for Phase 10', '¤')}
+          className={`nav-item ${isActive('/budget') ? 'active' : ''}`}
+          onClick={() => navigate('/budget/trip_1')}
         >
           <span className="ic">¤</span>Budget Breakdown
         </button>
         <button
-          className="nav-item"
-          onClick={() => showToast('Calendar / Timeline ready for Phase 10', '▦')}
+          className={`nav-item ${isActive('/calendar') ? 'active' : ''}`}
+          onClick={() => navigate('/calendar/trip_1')}
         >
           <span className="ic">▦</span>Calendar / Timeline
         </button>

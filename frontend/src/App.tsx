@@ -20,6 +20,11 @@ import { ItineraryBuilderPage } from './pages/ItineraryBuilderPage';
 import { ActivitySearchPage } from './pages/ActivitySearchPage';
 import { ItineraryViewPage } from './pages/ItineraryViewPage';
 
+// Budget, Calendar, Sharing Pages (Phase 10)
+import { BudgetBreakdownPage } from './pages/BudgetBreakdownPage';
+import { CalendarTimelinePage } from './pages/CalendarTimelinePage';
+import { SharedItineraryPage } from './pages/SharedItineraryPage';
+
 export const App: React.FC = () => {
   const { initialize } = useAuthStore();
 
@@ -31,12 +36,13 @@ export const App: React.FC = () => {
     <ToastProvider>
       <Router>
         <Routes>
-          {/* Public Auth Routes */}
+          {/* Public Auth & Shared Trip Routes */}
           <Route element={<PublicRoute />}>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           </Route>
+          <Route path="/shared/:token" element={<SharedItineraryPage />} />
 
           {/* Protected Application Routes */}
           <Route element={<ProtectedRoute />}>
@@ -48,6 +54,8 @@ export const App: React.FC = () => {
               <Route path="/builder/:id" element={<ItineraryBuilderPage />} />
               <Route path="/activities" element={<ActivitySearchPage />} />
               <Route path="/itinerary/:id" element={<ItineraryViewPage />} />
+              <Route path="/budget/:id" element={<BudgetBreakdownPage />} />
+              <Route path="/calendar/:id" element={<CalendarTimelinePage />} />
             </Route>
           </Route>
 
