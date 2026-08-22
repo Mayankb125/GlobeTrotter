@@ -131,3 +131,84 @@ async def test_me_without_token(client: AsyncClient):
 async def test_me_with_invalid_token(client: AsyncClient):
     resp = await client.get(ME_URL, headers={"Authorization": "Bearer invalidtoken.abc.xyz"})
     assert resp.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# Update / Delete profile tests
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_update_me_success(client: AsyncClient):
+    token = await _get_token(client)
+    resp = await client.put(
+        ME_URL,
+        headers={"Authorization": f"Bearer {token}"},
+        json={"name": "Alice Wanderer Updated", "profile_photo_url": "http://photo.com/alice.jpg"}
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["name"] == "Alice Wanderer Updated"
+    assert body["profile_photo_url"] == "http://photo.com/alice.jpg"
+
+
+@pytest.mark.asyncio
+async def test_update_me_email_conflict(client: AsyncClient):
+    token = await _get_token(client)
+    
+    # Create another user
+    await _signup(client, {
+        "name": "Bob Wanderer",
+        "email": "bob@globetrotter-example.com",
+        "password": "securepass456"
+    })
+    
+    # Try updating Alice's email to Bob's email
+    resp = await client.put(
+        ME_URL,
+        headers={"Authorization": f"Bearer {token}"},
+        json={"email": "bob@globetrotter-example.com"}
+    )
+    assert resp.status_code == 409
+
+
+@pytest.mark.asyncio
+async def test_update_me_password(client: AsyncClient):
+    token = await _get_token(client)
+    
+    # Update password
+    resp = await client.put(
+        ME_URL,
+        headers={"Authorization": f"Bearer {token}"},
+        json={"password": "newsecurepassword123"}
+    )
+    assert resp.status_code == 200
+    
+    # Attempt login with old password (should fail)
+    login_resp = await client.post(LOGIN_URL, json={
+        "email": VALID_USER["email"],
+        "password": VALID_USER["password"]
+    })
+    assert login_resp.status_code == 401
+    
+    # Attempt login with new password (should succeed)
+    login_resp2 = await client.post(LOGIN_URL, json={
+        "email": VALID_USER["email"],
+        "password": "newsecurepassword123"
+    })
+    assert login_resp2.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_delete_me_success(client: AsyncClient):
+    token = await _get_token(client)
+    
+    # Delete Alice
+    resp = await client.delete(
+        ME_URL,
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    assert resp.status_code == 204
+    
+    # Check that me request now fails
+    resp2 = await client.get(ME_URL, headers={"Authorization": f"Bearer {token}"})
+    assert resp2.status_code == 401

@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.security import create_access_token, hash_password, verify_password
 from app.models.user import User
-from app.schemas.user import TokenResponse, UserCreate, UserLogin, UserOut
+from app.schemas.user import TokenResponse, UserCreate, UserLogin, UserOut, UserUpdate
 from app.api.v1.deps import get_current_user
 
 logger = logging.getLogger(__name__)
@@ -133,3 +133,54 @@ async def me(current_user: User = Depends(get_current_user)):
     Returns 401 if the token is missing or invalid.
     """
     return current_user
+
+
+@router.put(
+    "/me",
+    response_model=UserOut,
+    summary="Update the currently authenticated user's profile",
+)
+async def update_me(
+    payload: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Update profile details for the authenticated user.
+    Supports updating name, email, profile_photo_url, and password.
+    """
+    if payload.email and payload.email != current_user.email:
+        # Check for email conflicts
+        existing = await db.execute(select(User).where(User.email == payload.email))
+        if existing.scalars().first():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="An account with this email already exists.",
+            )
+        current_user.email = payload.email
+
+    if payload.name is not None:
+        current_user.name = payload.name
+    if payload.profile_photo_url is not None:
+        current_user.profile_photo_url = payload.profile_photo_url
+    if payload.password is not None:
+        current_user.password_hash = hash_password(payload.password)
+
+    await db.flush()
+    await db.refresh(current_user)
+    return current_user
+
+
+@router.delete(
+    "/me",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete the currently authenticated user's account",
+)
+async def delete_me(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Permanently delete the authenticated user's account and all associated data.
+    """
+    await db.delete(current_user)
